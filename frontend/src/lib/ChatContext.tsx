@@ -153,7 +153,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ChatContext.Provider value={{ chats, currentChatMessages, newMessage, setNewMessage, sendMessage, handleFormSubmit, handleKeyDown, fetchChatMessages, fetchChats }}>
+    <ChatContext.Provider value={{ chats, currentChatMessages, newMessage, setNewMessage, sendMessage, handleFormSubmit, handleKeyDown, fetchChatMessages, fetchChats, deleteChat }}>
       {children}
     </ChatContext.Provider>
   );

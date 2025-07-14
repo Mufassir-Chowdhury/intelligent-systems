@@ -25,7 +25,7 @@ import { useEffect } from 'react';
 const ChatLayout = ({ children }: { children: React.ReactNode }) => {
   const params = useParams();
   const chatId = params.id as string | null;
-  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats } = useChat();
+  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats, deleteChat } = useChat();
 
   useEffect(() => {
     fetchChats();
