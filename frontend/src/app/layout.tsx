@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Paperclip, Send, Plus, X } from "lucide-react";
 import Link from "next/link";
+import { formatChatTimestamp } from '@/lib/dateUtils';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -53,7 +54,7 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
                                 if (isDeletingChat || isSendingMessage) e.preventDefault();
                             }}>
                                 <p className="font-semibold overflow-clip">{chat.title}</p>
-                                <p className="text-sm text-gray-500">{chat.timestamp}</p>
+                                <p className="text-sm text-gray-500">{formatChatTimestamp(chat.timestamp)}</p>
                             </Link>
                             <Button variant="ghost" size="icon" onClick={() => deleteChat(chat.id)} disabled={isDeletingChat || isSendingMessage}>
                                 <X className="h-4 w-4" />

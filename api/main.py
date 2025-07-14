@@ -1,9 +1,13 @@
-from typing import Dict, List, Union
+from pydantic_models import Message, Chat, ChatSummary
+from llm import generate
+from typing import Dict, List
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
 import uuid
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -18,22 +22,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-class Message(BaseModel):
-    text: str
-    sender: str
-    timestamp: str
-
-class Chat(BaseModel):
-    id: str
-    title: str
-    messages: List[Message]
-    timestamp: str
-
-class ChatSummary(BaseModel):
-    id: str
-    title: str
-    timestamp: str
 
 # In-memory store for chats
 chats_db: Dict[str, Chat] = {}
@@ -59,12 +47,18 @@ def delete_chat(chat_id: str):
 @app.post("/chats", response_model=Chat, status_code=201)
 def create_chat(message: Message):
     chat_id = str(uuid.uuid4())
+
     new_chat = Chat(
         id=chat_id,
-        title=message.text, # First message text as chat title
+        title="".join(generate(f"Give a title for a chat with message {message.text}")), # First message text as chat title
         messages=[message],
         timestamp=datetime.now().isoformat()
     )
+    new_chat.messages.append(Message(
+        text =  "".join(generate(f"You are a helpful assistant. Answer the message in short: {message.text}")),
+        sender='assistant',
+        timestamp=datetime.now().isoformat()
+    ))
     chats_db[chat_id] = new_chat
     return new_chat
 
@@ -74,5 +68,15 @@ def send_message_to_chat(chat_id: str, message: Message):
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
     chat.messages.append(message)
+    
+    # Generate assistant's response
+    assistant_response = "".join(generate(message.text))
+    assistant_message = Message(
+        text=assistant_response,
+        sender='assistant',
+        timestamp=datetime.now().isoformat()
+    )
+    chat.messages.append(assistant_message)
+    
     chat.timestamp = datetime.now().isoformat() # Update chat timestamp on new message
     return message
