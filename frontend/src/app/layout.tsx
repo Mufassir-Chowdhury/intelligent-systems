@@ -50,6 +50,9 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
         </ul>
       </aside>
       <main className="flex flex-1 flex-col">
+        <header className="text-3xl font-semibold text-center m-8">
+          Intelligent Systems
+        </header>
         {children}
         <form onSubmit={(e) => handleFormSubmit(e, chatId)} className="border m-6 mx-16 rounded-lg dark:border-gray-800">
           <div className="relative flex flex-col">
