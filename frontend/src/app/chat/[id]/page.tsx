@@ -4,23 +4,22 @@ import { useChat } from '@/lib/ChatContext';
 import { useEffect, useRef } from 'react';
 
 export default function ChatPage({ params }: { params: { id: string } }) {
-  const { getChatById } = useChat();
-  const chat = getChatById(params.id);
+  const { currentChatMessages, fetchChatMessages } = useChat();
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetchChatMessages(params.id);
+  }, [params.id, fetchChatMessages]);
 
   useEffect(() => {
     if (chatContainerRef.current) {
       chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
-  }, [chat?.messages]);
-
-  if (!chat) {
-    return <div>Chat not found</div>;
-  }
+  }, [currentChatMessages]);
 
   return (
     <div ref={chatContainerRef} className="flex-1 p-4 px-20 space-y-8 overflow-y-auto">
-      {chat.messages.map((msg, index) => (
+      {currentChatMessages.map((msg, index) => (
         <div key={index}>
           {msg.sender === 'user' && (
             <div className="flex justify-end">

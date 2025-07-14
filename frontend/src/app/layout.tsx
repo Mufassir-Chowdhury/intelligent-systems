@@ -5,7 +5,7 @@ import "./globals.css";
 import { ChatProvider, useChat } from '@/lib/ChatContext';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, Send, Plus } from "lucide-react";
+import { Paperclip, Send, Plus, X } from "lucide-react";
 import Link from "next/link";
 
 const geistSans = Geist({
@@ -20,10 +20,16 @@ const geistMono = Geist_Mono({
 
 import { useParams } from 'next/navigation';
 
+import { useEffect } from 'react';
+
 const ChatLayout = ({ children }: { children: React.ReactNode }) => {
   const params = useParams();
   const chatId = params.id as string | null;
-  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown } = useChat();
+  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats } = useChat();
+
+  useEffect(() => {
+    fetchChats();
+  }, [fetchChats]);
 
   return (
     <div className="flex h-screen text-lg">
@@ -39,12 +45,15 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
         <ul>
             {chats.map(chat => (
                 <li key={chat.id} className="mb-2">
-                    <Link href={`/chat/${chat.id}`}>
-                        <div className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
-                            <p className="font-semibold">{chat.title}</p>
+                    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                        <Link href={`/chat/${chat.id}`} className="flex-grow">
+                            <p className="font-semibold overflow-clip">{chat.title}</p>
                             <p className="text-sm text-gray-500">{chat.timestamp}</p>
-                        </div>
-                    </Link>
+                        </Link>
+                        <Button variant="ghost" size="icon" onClick={() => deleteChat(chat.id)}>
+                            <X className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </li>
             ))}
         </ul>
