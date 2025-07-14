@@ -25,7 +25,7 @@ import { useEffect } from 'react';
 const ChatLayout = ({ children }: { children: React.ReactNode }) => {
   const params = useParams();
   const chatId = params.id as string | null;
-  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats, deleteChat } = useChat();
+  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats, deleteChat, isSendingMessage, isFetchingChats, isDeletingChat } = useChat();
 
   useEffect(() => {
     fetchChats();
@@ -37,26 +37,32 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-semibold">Chat History</h2>
             <Link href="/">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled={isDeletingChat || isSendingMessage}>
                     <Plus className="h-6 w-6" />
                 </Button>
             </Link>
         </div>
-        <ul>
-            {chats.map(chat => (
-                <li key={chat.id} className="mb-2">
-                    <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
-                        <Link href={`/chat/${chat.id}`} className="flex-grow">
-                            <p className="font-semibold overflow-clip">{chat.title}</p>
-                            <p className="text-sm text-gray-500">{chat.timestamp}</p>
-                        </Link>
-                        <Button variant="ghost" size="icon" onClick={() => deleteChat(chat.id)}>
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </li>
-            ))}
-        </ul>
+        {isFetchingChats ? (
+            <div className="text-center text-gray-500">Loading chats...</div>
+        ) : (
+            <ul>
+                {chats.map(chat => (
+                    <li key={chat.id} className="mb-2">
+                        <div className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <Link href={`/chat/${chat.id}`} className="flex-grow" onClick={(e) => {
+                                if (isDeletingChat || isSendingMessage) e.preventDefault();
+                            }}>
+                                <p className="font-semibold overflow-clip">{chat.title}</p>
+                                <p className="text-sm text-gray-500">{chat.timestamp}</p>
+                            </Link>
+                            <Button variant="ghost" size="icon" onClick={() => deleteChat(chat.id)} disabled={isDeletingChat || isSendingMessage}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        )}
       </aside>
       <main className="flex flex-1 flex-col">
         <header className="text-3xl font-semibold text-center m-8">
@@ -72,12 +78,13 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, chatId)}
+              disabled={isSendingMessage}
             />
             <div className="absolute bottom-3 right-2 flex items-center gap-2">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" disabled={isSendingMessage}>
                 <Paperclip className="h-5 w-5" />
               </Button>
-              <Button type="submit" variant="ghost" size="icon">
+              <Button type="submit" variant="ghost" size="icon" disabled={isSendingMessage}>
                 <Send className="h-5 w-5" />
               </Button>
             </div>
