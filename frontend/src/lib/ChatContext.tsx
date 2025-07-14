@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, ReactNode, FormEvent, KeyboardEvent } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Message {
   text: string;
@@ -8,22 +9,33 @@ interface Message {
   timestamp: string;
 }
 
+interface Chat {
+    id: string;
+    title: string;
+    messages: Message[];
+    timestamp: string;
+}
+
 interface ChatContextType {
-  messages: Message[];
+  chats: Chat[];
   newMessage: string;
   setNewMessage: (message: string) => void;
-  sendMessage: () => void;
-  handleFormSubmit: (e: FormEvent) => void;
-  handleKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>) => void;
+  sendMessage: (chatId: string | null) => void;
+  handleFormSubmit: (e: FormEvent, chatId: string | null) => void;
+  handleKeyDown: (e: KeyboardEvent<HTMLTextAreaElement>, chatId: string | null) => void;
+  getChatById: (chatId: string) => Chat | undefined;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 export const ChatProvider = ({ children }: { children: ReactNode }) => {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<Chat[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const router = useRouter();
 
-  const sendMessage = () => {
+  const getChatById = (chatId: string) => chats.find(chat => chat.id === chatId);
+
+  const sendMessage = (chatId: string | null) => {
     if (newMessage.trim() === '') return;
 
     const userMessage: Message = {
@@ -38,24 +50,46 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         timestamp: new Date().toLocaleTimeString(),
     }
 
-    setMessages(prevMessages => [...prevMessages, userMessage, assistantMessage]);
+    if (chatId) {
+        setChats(prevChats => prevChats.map(chat => {
+            if (chat.id === chatId) {
+                return {
+                    ...chat,
+                    messages: [...chat.messages, userMessage, assistantMessage],
+                    timestamp: new Date().toLocaleTimeString(),
+                }
+            }
+            return chat;
+        }));
+    } else {
+        const newChatId = Date.now().toString();
+        const newChat: Chat = {
+            id: newChatId,
+            title: newMessage,
+            messages: [userMessage, assistantMessage],
+            timestamp: new Date().toLocaleTimeString(),
+        }
+        setChats(prevChats => [...prevChats, newChat]);
+        router.push(`/chat/${newChatId}`);
+    }
+
     setNewMessage('');
   };
 
-  const handleFormSubmit = (e: FormEvent) => {
+  const handleFormSubmit = (e: FormEvent, chatId: string | null) => {
     e.preventDefault();
-    sendMessage();
+    sendMessage(chatId);
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>, chatId: string | null) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      sendMessage();
+      sendMessage(chatId);
     }
   };
 
   return (
-    <ChatContext.Provider value={{ messages, newMessage, setNewMessage, sendMessage, handleFormSubmit, handleKeyDown }}>
+    <ChatContext.Provider value={{ chats, newMessage, setNewMessage, sendMessage, handleFormSubmit, handleKeyDown, getChatById }}>
       {children}
     </ChatContext.Provider>
   );

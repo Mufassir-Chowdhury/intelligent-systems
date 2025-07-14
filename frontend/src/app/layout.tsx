@@ -5,7 +5,8 @@ import "./globals.css";
 import { ChatProvider, useChat } from '@/lib/ChatContext';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, Send } from "lucide-react";
+import { Paperclip, Send, Plus } from "lucide-react";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -17,17 +18,40 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+import { useParams } from 'next/navigation';
+
 const ChatLayout = ({ children }: { children: React.ReactNode }) => {
-  const { newMessage, setNewMessage, handleFormSubmit, handleKeyDown } = useChat();
+  const params = useParams();
+  const chatId = params.id as string | null;
+  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown } = useChat();
 
   return (
     <div className="flex h-screen text-lg">
       <aside className="w-72 bg-gray-100 p-4 dark:bg-gray-800">
-        <h2 className="text-2xl font-semibold">Chat History</h2>
+        <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">Chat History</h2>
+            <Link href="/">
+                <Button variant="ghost" size="icon">
+                    <Plus className="h-6 w-6" />
+                </Button>
+            </Link>
+        </div>
+        <ul>
+            {chats.map(chat => (
+                <li key={chat.id} className="mb-2">
+                    <Link href={`/chat/${chat.id}`}>
+                        <div className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700">
+                            <p className="font-semibold">{chat.title}</p>
+                            <p className="text-sm text-gray-500">{chat.timestamp}</p>
+                        </div>
+                    </Link>
+                </li>
+            ))}
+        </ul>
       </aside>
       <main className="flex flex-1 flex-col">
         {children}
-        <form onSubmit={handleFormSubmit} className="border m-6 mx-16 rounded-lg dark:border-gray-800">
+        <form onSubmit={(e) => handleFormSubmit(e, chatId)} className="border m-6 mx-16 rounded-lg dark:border-gray-800">
           <div className="relative flex flex-col">
             <Textarea
               placeholder="Type your message..."
@@ -35,7 +59,7 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
               rows={2}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onKeyDown={(e) => handleKeyDown(e, chatId)}
             />
             <div className="absolute bottom-3 right-2 flex items-center gap-2">
               <Button variant="ghost" size="icon">
@@ -57,7 +81,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
+    return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
