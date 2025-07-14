@@ -51,12 +51,13 @@ def create_chat(message: Message):
     new_chat = Chat(
         id=chat_id,
         title="".join(generate(f"Give a title for a chat with message {message.text}")), # First message text as chat title
+        # title="".join(generate(message.text, title=True)),
         messages=[message],
         timestamp=datetime.now().isoformat()
     )
     new_chat.messages.append(Message(
         text =  "".join(generate(f"You are a helpful assistant. Answer the message in short: {message.text}")),
-        sender='assistant',
+        sender='model',
         timestamp=datetime.now().isoformat()
     ))
     chats_db[chat_id] = new_chat
@@ -70,10 +71,10 @@ def send_message_to_chat(chat_id: str, message: Message):
     chat.messages.append(message)
     
     # Generate assistant's response
-    assistant_response = "".join(generate(message.text))
+    assistant_response = "".join(generate(message.text, history=chat.messages))
     assistant_message = Message(
         text=assistant_response,
-        sender='assistant',
+        sender='model',
         timestamp=datetime.now().isoformat()
     )
     chat.messages.append(assistant_message)

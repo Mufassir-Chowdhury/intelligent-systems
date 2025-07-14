@@ -31,7 +31,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
                 </div>
               </div>
             )}
-            {msg.sender === 'assistant' && (
+            {msg.sender === 'model' && (
               <div className="flex justify-start items-start gap-3">
                 <div className="w-8 h-8 mt-2 rounded-full bg-gray-400 flex-shrink-0"></div>
                 <p className="text-lg max-w-2xl break-words">{msg.text}</p>
