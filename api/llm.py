@@ -1,7 +1,9 @@
 from google import genai
 from google.genai import types
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 def generate(prompt, title=False, history=[]):
     api_key = os.getenv("GOOGLE_API_KEY")
     if not api_key:

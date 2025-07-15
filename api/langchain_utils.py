@@ -4,7 +4,9 @@ from typing import AsyncGenerator
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
+from dotenv import load_dotenv
 
+load_dotenv()
 # Check for API key
 api_key = os.getenv("GOOGLE_API_KEY")
 if not api_key:
