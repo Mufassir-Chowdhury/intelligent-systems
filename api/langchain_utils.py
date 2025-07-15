@@ -20,7 +20,7 @@ model_name = "gemini-2.5-flash"
 llm = ChatGoogleGenerativeAI(
     model=model_name,
     google_api_key=api_key,
-    generation_config={"thinking_config": {"thinking_budget": 0}}
+    model_kwargs={"generation_config": {"thinking_config": {"thinking_budget": 0}}}
 )
 
 def convert_history_to_langchain_format(history):

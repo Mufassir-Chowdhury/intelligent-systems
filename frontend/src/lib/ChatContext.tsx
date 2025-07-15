@@ -119,70 +119,62 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       timestamp: new Date().toISOString(),
     };
 
+    // Optimistically update UI
+    setCurrentChatMessages(prevMessages => [...prevMessages, userMessage]);
+    setNewMessage('');
+
+    // Add a "thinking" placeholder for the model's response
+    const thinkingMessage: Message = { text: 'thinking', sender: 'model', timestamp: new Date().toISOString() };
+    setCurrentChatMessages(prevMessages => [...prevMessages, { ...thinkingMessage, text: <div className="fade-in-out">thinking</div> }]);
+
     try {
-      if (chatId) {
-        // Optimistically update UI
-        setCurrentChatMessages(prevMessages => [...prevMessages, userMessage]);
-        setNewMessage('');
+      const url = chatId ? `${API_BASE_URL}/chats/${chatId}/messages` : `${API_BASE_URL}/chats`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userMessage),
+      });
 
-        // Send message to existing chat
-        const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userMessage),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to send message');
-        }
-
-        if (response.body) {
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            let modelMessage: Message = { text: '', sender: 'model', timestamp: new Date().toISOString() };
-            setCurrentChatMessages(prevMessages => [...prevMessages, modelMessage]);
-
-            const read = async () => {
-                const { done, value } = await reader.read();
-                if (done) {
-                    fetchChats(); // Update chat list after streaming is complete
-                    return;
-                }
-                const chunk = decoder.decode(value, { stream: true });
-                modelMessage.text += chunk;
-                setCurrentChatMessages(prevMessages => [...prevMessages.slice(0, -1), { ...modelMessage }]);
-                read();
-            };
-            read();
-        }
-
-      } else {
-        // Create new chat
-        const response = await fetch(`${API_BASE_URL}/chats`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(userMessage),
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to create new chat');
-        }
-        const newChat: FullChat = await response.json();
-        setChats(prevChats => [...prevChats, { id: newChat.id, title: newChat.title, timestamp: newChat.timestamp }]);
-        setCurrentChatMessages(newChat.messages);
-        router.push(`/chat/${newChat.id}`);
+      if (!response.ok) {
+        throw new Error('Failed to send message');
       }
-      setNewMessage('');
+
+      if (response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let modelMessage: Message = { text: '', sender: 'model', timestamp: new Date().toISOString() };
+        
+        // Replace "thinking" placeholder with the actual message
+        setCurrentChatMessages(prevMessages => [...prevMessages.slice(0, -1), modelMessage]);
+
+        const read = async () => {
+          const { done, value } = await reader.read();
+          if (done) {
+            if (!chatId) {
+              // If it was a new chat, we need to get the new chat info
+              // The full chat object is returned from the create_chat endpoint
+              const finalChat: FullChat = JSON.parse(modelMessage.text);
+              setChats(prevChats => [...prevChats, { id: finalChat.id, title: finalChat.title, timestamp: finalChat.timestamp }]);
+              setCurrentChatMessages(finalChat.messages);
+              router.push(`/chat/${finalChat.id}`);
+            }
+            fetchChats(); // Update chat list after streaming is complete
+            return;
+          }
+          const chunk = decoder.decode(value, { stream: true });
+          modelMessage.text += chunk;
+          setCurrentChatMessages(prevMessages => [...prevMessages.slice(0, -1), { ...modelMessage }]);
+          read();
+        };
+        read();
+      }
+
     } catch (error) {
       console.error('Error sending message:', error);
-      // Revert optimistic update if it was done
-      if (chatId) {
-        setCurrentChatMessages(prevMessages => prevMessages.filter(msg => msg !== userMessage));
-      }
+      // Revert optimistic update
+      setCurrentChatMessages(prevMessages => prevMessages.filter(msg => msg !== userMessage && msg.text !== 'thinking'));
     } finally {
       setIsSendingMessage(false);
     }

@@ -74,7 +74,7 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
           <div className="relative flex flex-col">
             <Textarea
               placeholder="Type your message..."
-              className="min-h-[120px] max-h-[200px] w-full resize-none border-0 bg-transparent text-lg p-4 pr-20 focus-visible:ring-0"
+              className="min-h-[120px] max-h-[200px] w-full resize-none border-0 bg-transparent text-lg p-4 pr-20 focus-visible:ring-0 larger-textarea"
               rows={2}
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
