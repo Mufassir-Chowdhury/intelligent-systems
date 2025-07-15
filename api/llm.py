@@ -12,7 +12,8 @@ def generate(prompt, title=False, history=[]):
     )
     if title:
         prompt = f'Generate the title for the chat starting with the message: \"{prompt}\". The title should be descriptive of what the chat is about.'
-    model = "gemini-2.5-flash-lite-preview-06-17"
+    # model = "gemini-2.5-flash-lite-preview-06-17"
+    model = "gemini-2.5-flash"
     contents = [
         types.Content(
             role=message.sender,
@@ -29,13 +30,6 @@ def generate(prompt, title=False, history=[]):
             ],
         )
     )
-    # for message in history:
-    #     contents.append(types.Content(
-    #         role=message.sender,
-    #         parts=[
-    #             types.Part.from_text(text=message.text)
-    #         ]
-    #     ))
     generate_content_config = types.GenerateContentConfig(
         thinking_config = types.ThinkingConfig(
             thinking_budget=0,

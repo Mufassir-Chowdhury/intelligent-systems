@@ -123,6 +123,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       if (chatId) {
         // Optimistically update UI
         setCurrentChatMessages(prevMessages => [...prevMessages, userMessage]);
+        setNewMessage('');
 
         // Send message to existing chat
         const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages`, {
@@ -136,8 +137,26 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
         if (!response.ok) {
           throw new Error('Failed to send message');
         }
-        // No need to update currentChatMessages again if optimistic update was done
-        fetchChats(); // Optionally, refetch chats to update timestamp in sidebar
+
+        if (response.body) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let modelMessage: Message = { text: '', sender: 'model', timestamp: new Date().toISOString() };
+            setCurrentChatMessages(prevMessages => [...prevMessages, modelMessage]);
+
+            const read = async () => {
+                const { done, value } = await reader.read();
+                if (done) {
+                    fetchChats(); // Update chat list after streaming is complete
+                    return;
+                }
+                const chunk = decoder.decode(value, { stream: true });
+                modelMessage.text += chunk;
+                setCurrentChatMessages(prevMessages => [...prevMessages.slice(0, -1), { ...modelMessage }]);
+                read();
+            };
+            read();
+        }
 
       } else {
         // Create new chat
