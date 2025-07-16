@@ -1,8 +1,9 @@
 import os
 from typing import AsyncGenerator
+import aiofiles
 
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
-from langchain_core.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dotenv import load_dotenv
 
@@ -29,10 +30,10 @@ def convert_history_to_langchain_format(history):
     """Converts chat history to LangChain message format."""
     messages = []
     for message in history:
-        if message.sender.lower() == 'user':
-            messages.append(HumanMessage(content=message.text))
+        if message['sender'].lower() == 'user':
+            messages.append(HumanMessage(content=message['text']))
         else:
-            messages.append(AIMessage(content=message.text))
+            messages.append(AIMessage(content=message['text']))
     return messages
 
 async def generate_langchain(prompt: str, title: bool = False, history: list = []):
@@ -51,7 +52,13 @@ async def generate_langchain(prompt: str, title: bool = False, history: list = [
         result = await structured_llm.ainvoke(messages)
         return result.title
     else:
-        system_message = SystemMessage(content="You are a helpful assistant. Reply to user requests in a concise form. Be direct and don't read too much between the lines.")
+        prompt_file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "personal_ai_assistant_prompt.md")
+        async with aiofiles.open(prompt_file_path, "r", encoding="utf-8") as f:
+            system_prompt = await f.read()
+        # try:
+        # except FileNotFoundError:
+        #     system_prompt = "You are a helpful assistant. Reply to user requests in a concise form. Be direct and don't read too much between the lines."
+        system_message = SystemMessage(content=system_prompt)
         
         messages = convert_history_to_langchain_format(history)
         messages.append(HumanMessage(content=prompt))
