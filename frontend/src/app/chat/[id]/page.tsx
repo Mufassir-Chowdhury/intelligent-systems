@@ -2,6 +2,7 @@
 
 import { useChat } from '@/lib/ChatContext';
 import { useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 export default function ChatPage({ params }: { params: { id: string } }) {
   const { currentChatMessages, fetchChatMessages, isFetchingMessages } = useChat();
@@ -34,7 +35,13 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             {msg.sender === 'model' && (
               <div className="flex justify-start items-start gap-3">
                 <div className="w-8 h-8 mt-2 rounded-full bg-gray-400 flex-shrink-0"></div>
-                <p className="text-lg max-w-2xl break-words">{msg.text}</p>
+                <div className="prose text-lg max-w-2xl break-words">
+                  {typeof msg.text === "string" ? (
+                    <ReactMarkdown>{msg.text}</ReactMarkdown>
+                  ) : (
+                    <p>{msg.text}</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
