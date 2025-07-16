@@ -45,7 +45,7 @@ async def get_all_chats(db: AsyncSession = Depends(get_db)):
 
 @app.get("/chats/{chat_id}/messages", response_model=List[PydanticMessage])
 async def get_all_messages_for_chat(chat_id: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(models.Message).where(models.Message.chat_id == chat_id).order_by(models.Message.timestamp))
+    result = await db.execute(select(models.Message).where(models.Message.chat_id == chat_id))
     messages = result.scalars().all()
     if not messages:
         raise HTTPException(status_code=404, detail="Chat not found or has no messages")
@@ -119,7 +119,6 @@ async def send_message_to_chat(chat_id: str, message: PydanticMessage, db: Async
         timestamp=message.timestamp,
         chat_id=chat_id
     )
-    db.add(user_message)
 
     history_result = await db.execute(select(models.Message).where(models.Message.chat_id == chat_id).order_by(models.Message.timestamp))
     history = history_result.scalars().all()
@@ -138,7 +137,7 @@ async def send_message_to_chat(chat_id: str, message: PydanticMessage, db: Async
             timestamp=datetime.now().isoformat(),
             chat_id=chat_id
         )
-        db.add(assistant_message)
+        db.add_all([user_message, assistant_message])
         chat.timestamp = datetime.now().isoformat()
         await db.commit()
 
