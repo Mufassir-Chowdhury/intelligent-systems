@@ -30,5 +30,11 @@ class Message(Base):
 class Document(Base):
     __tablename__ = 'documents'
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    file_path = Column(String) # Add this line
     text = Column(Text)
     embedding = Column(Vector(384))
+
+class ProcessedFile(Base):
+    __tablename__ = 'processed_files'
+    file_path = Column(String, primary_key=True)
+    last_modified = Column(String)

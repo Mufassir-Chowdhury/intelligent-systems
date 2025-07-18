@@ -25,6 +25,7 @@ app = FastAPI()
 async def startup():
     await enable_vector_extension(engine)
     async with engine.begin() as conn:
+        # await conn.run_sync(models.Base.metadata.drop_all)
         await conn.run_sync(models.Base.metadata.create_all)
     async for db in get_db():
         await process_and_embed_pdfs(db)
