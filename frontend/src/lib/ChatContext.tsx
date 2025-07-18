@@ -36,6 +36,8 @@ interface ChatContextType {
   isFetchingChats: boolean;
   isFetchingMessages: boolean;
   isDeletingChat: boolean;
+  useRAG: boolean;
+  setUseRAG: (useRAG: boolean) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -48,6 +50,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [isFetchingChats, setIsFetchingChats] = useState(false);
   const [isFetchingMessages, setIsFetchingMessages] = useState(false);
   const [isDeletingChat, setIsDeletingChat] = useState(false);
+  const [useRAG, setUseRAG] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -128,7 +131,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setCurrentChatMessages(prevMessages => [...prevMessages, { ...thinkingMessage, text: <div className="fade-in-out">thinking</div> }]);
 
     try {
-      const url = chatId ? `${API_BASE_URL}/chats/${chatId}/messages` : `${API_BASE_URL}/chats`;
+      const url = useRAG ? `${API_BASE_URL}/rag_chat` : (chatId ? `${API_BASE_URL}/chats/${chatId}/messages` : `${API_BASE_URL}/chats`);
       const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -193,7 +196,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <ChatContext.Provider value={{ chats, currentChatMessages, newMessage, setNewMessage, sendMessage, handleFormSubmit, handleKeyDown, fetchChatMessages, fetchChats, deleteChat, isSendingMessage, isFetchingChats, isFetchingMessages, isDeletingChat }}>
+    <ChatContext.Provider value={{ chats, currentChatMessages, newMessage, setNewMessage, sendMessage, handleFormSubmit, handleKeyDown, fetchChatMessages, fetchChats, deleteChat, isSendingMessage, isFetchingChats, isFetchingMessages, isDeletingChat, useRAG, setUseRAG }}>
       {children}
     </ChatContext.Provider>
   );

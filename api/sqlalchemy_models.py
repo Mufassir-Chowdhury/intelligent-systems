@@ -1,6 +1,9 @@
-from sqlalchemy import Column, String, ForeignKey, Text
+from sqlalchemy import Column, String, ForeignKey, Text, Integer
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
+from pgvector.sqlalchemy import Vector
+import uuid
+
 
 Base = declarative_base()
 
@@ -23,3 +26,9 @@ class Message(Base):
     chat_id = Column(String, ForeignKey("chats.id"))
 
     chat = relationship("Chat", back_populates="messages")
+
+class Document(Base):
+    __tablename__ = 'documents'
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    text = Column(Text)
+    embedding = Column(Vector(384))

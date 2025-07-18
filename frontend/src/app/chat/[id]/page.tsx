@@ -35,7 +35,7 @@ export default function ChatPage({ params }: { params: { id: string } }) {
             {msg.sender === 'model' && (
               <div className="flex justify-start items-start gap-3">
                 <div className="w-8 h-8 mt-2 rounded-full bg-gray-400 flex-shrink-0"></div>
-                <div className="prose text-lg max-w-2xl break-words">
+                <div className="prose text-lg break-words">
                   {typeof msg.text === "string" ? (
                     <ReactMarkdown>{msg.text}</ReactMarkdown>
                   ) : (

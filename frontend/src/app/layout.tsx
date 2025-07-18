@@ -5,7 +5,7 @@ import "./globals.css";
 import { ChatProvider, useChat } from '@/lib/ChatContext';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Paperclip, Send, Plus, X } from "lucide-react";
+import { Paperclip, Send, Plus, X, FileText } from "lucide-react";
 import Link from "next/link";
 import { formatChatTimestamp } from '@/lib/dateUtils';
 
@@ -26,7 +26,7 @@ import { useEffect } from 'react';
 const ChatLayout = ({ children }: { children: React.ReactNode }) => {
   const params = useParams();
   const chatId = params.id as string | null;
-  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats, deleteChat, isSendingMessage, isFetchingChats, isDeletingChat } = useChat();
+  const { chats, newMessage, setNewMessage, handleFormSubmit, handleKeyDown, fetchChats, deleteChat, isSendingMessage, isFetchingChats, isDeletingChat, useRAG, setUseRAG } = useChat();
 
   useEffect(() => {
     fetchChats();
@@ -84,6 +84,9 @@ const ChatLayout = ({ children }: { children: React.ReactNode }) => {
             <div className="absolute bottom-3 right-2 flex items-center gap-2">
               <Button variant="ghost" size="icon" disabled={isSendingMessage}>
                 <Paperclip className="h-5 w-5" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => setUseRAG(!useRAG)} disabled={isSendingMessage}>
+                <FileText className={`h-5 w-5 ${useRAG ? 'text-blue-500' : ''}`} />
               </Button>
               <Button type="submit" variant="ghost" size="icon" disabled={isSendingMessage}>
                 <Send className="h-5 w-5" />

@@ -13,7 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from sqlalchemy.orm import selectinload # Make sure to import this
 
-from database import get_db, engine
+from database import get_db, engine, enable_vector_extension
+from rag import process_and_embed_pdfs, model
+from sqlalchemy import text
 
 load_dotenv()
 
@@ -21,8 +23,11 @@ app = FastAPI()
 # This function should be called at startup to create the database tables.
 @app.on_event("startup")
 async def startup():
+    await enable_vector_extension(engine)
     async with engine.begin() as conn:
         await conn.run_sync(models.Base.metadata.create_all)
+    async for db in get_db():
+        await process_and_embed_pdfs(db)
 
 origins = [
     "*" 
@@ -140,5 +145,26 @@ async def send_message_to_chat(chat_id: str, message: PydanticMessage, db: Async
         db.add_all([user_message, assistant_message])
         chat.timestamp = datetime.now().isoformat()
         await db.commit()
+
+    return StreamingResponse(stream_response(), media_type="text/plain")
+
+@app.post("/rag_chat")
+async def rag_chat(message: PydanticMessage, db: AsyncSession = Depends(get_db)):
+    user_embedding = model.encode(message.text, convert_to_tensor=False).tolist()
+    result = await db.execute(
+        select(models.Document)
+        .order_by(models.Document.embedding.l2_distance(user_embedding))
+        .limit(5)
+    )
+    documents = result.scalars().all()
+    context = "\n".join([doc.text for doc in documents])
+
+    response_generator = await generate_langchain(message.text, history=[], context=context)
+
+    async def stream_response():
+        response_chunks = []
+        async for chunk in response_generator:
+            response_chunks.append(chunk)
+            yield chunk
 
     return StreamingResponse(stream_response(), media_type="text/plain")

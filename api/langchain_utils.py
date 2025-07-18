@@ -36,7 +36,7 @@ def convert_history_to_langchain_format(history):
             messages.append(AIMessage(content=message['text']))
     return messages
 
-async def generate_langchain(prompt: str, title: bool = False, history: list = []):
+async def generate_langchain(prompt: str, title: bool = False, history: list = [], context: str = None):
     """
     Generates a response from Gemini using LangChain.
     If title is True, it generates a title for the chat.
@@ -60,7 +60,10 @@ async def generate_langchain(prompt: str, title: bool = False, history: list = [
         #     system_prompt = "You are a helpful assistant. Reply to user requests in a concise form. Be direct and don't read too much between the lines."
         system_message = SystemMessage(content=system_prompt)
         
+
         messages = convert_history_to_langchain_format(history)
+        if context:
+            messages.append(SystemMessage(content=f'Context: {context}'))
         messages.append(HumanMessage(content=prompt))
         
         final_messages = [system_message] + messages

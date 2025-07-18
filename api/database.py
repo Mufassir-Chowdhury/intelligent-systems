@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import text
+
 
 load_dotenv()
 
@@ -17,3 +19,8 @@ async def get_db() -> AsyncSession:
     """
     async with SessionLocal() as session:
         yield session
+
+async def enable_vector_extension(engine):
+    async with engine.connect() as conn:
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector'))
+        await conn.commit()
