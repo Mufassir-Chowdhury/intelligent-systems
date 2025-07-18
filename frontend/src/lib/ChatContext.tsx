@@ -9,6 +9,7 @@ interface Message {
   text: string;
   sender: 'user' | 'model';
   timestamp: string;
+  rag_enabled?: boolean;
 }
 
 interface ChatSummary {
@@ -120,6 +121,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
       text: newMessage,
       sender: 'user',
       timestamp: new Date().toISOString(),
+      rag_enabled: useRAG,
     };
 
     // Optimistically update UI
@@ -131,7 +133,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     setCurrentChatMessages(prevMessages => [...prevMessages, { ...thinkingMessage, text: <div className="fade-in-out">thinking</div> }]);
 
     try {
-      const url = useRAG ? `${API_BASE_URL}/rag_chat` : (chatId ? `${API_BASE_URL}/chats/${chatId}/messages` : `${API_BASE_URL}/chats`);
+      const url = chatId ? `${API_BASE_URL}/chats/${chatId}/messages` : `${API_BASE_URL}/chats`;
       const response = await fetch(url, {
         method: 'POST',
         headers: {

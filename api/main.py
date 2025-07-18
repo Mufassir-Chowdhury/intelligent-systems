@@ -85,8 +85,20 @@ async def create_chat(message: PydanticMessage, db: AsyncSession = Depends(get_d
         timestamp=message.timestamp,
         chat_id=chat_id
     )
+    
+    context = None
+    if message.rag_enabled:
+        user_embedding = model.encode(message.text, convert_to_tensor=False).tolist()
+        result = await db.execute(
+            select(models.Document)
+            .order_by(models.Document.embedding.l2_distance(user_embedding))
+            .limit(5)
+        )
+        documents = result.scalars().all()
+        context = "\n".join([doc.text for doc in documents])
 
-    response_generator = await generate_langchain(message.text, history=[])
+
+    response_generator = await generate_langchain(message.text, history=[], context=context)
     response_chunks = [chunk async for chunk in response_generator]
 
     assistant_message = models.Message(
@@ -101,7 +113,6 @@ async def create_chat(message: PydanticMessage, db: AsyncSession = Depends(get_d
     db.add(new_chat)
     await db.commit()
 
-    # Eagerly load the messages relationship before returning
     result = await db.execute(
         select(models.Chat)
         .options(selectinload(models.Chat.messages))
@@ -117,6 +128,7 @@ async def send_message_to_chat(chat_id: str, message: PydanticMessage, db: Async
     chat = result.scalar_one_or_none()
     if not chat:
         raise HTTPException(status_code=404, detail="Chat not found")
+
     user_message = models.Message(
         id=str(uuid.uuid4()),
         text=message.text,
@@ -128,8 +140,19 @@ async def send_message_to_chat(chat_id: str, message: PydanticMessage, db: Async
     history_result = await db.execute(select(models.Message).where(models.Message.chat_id == chat_id).order_by(models.Message.timestamp))
     history = history_result.scalars().all()
 
+    context = None
+    if message.rag_enabled:
+        user_embedding = model.encode(message.text, convert_to_tensor=False).tolist()
+        result = await db.execute(
+            select(models.Document)
+            .order_by(models.Document.embedding.l2_distance(user_embedding))
+            .limit(5)
+        )
+        documents = result.scalars().all()
+        context = "\n".join([doc.text for doc in documents])
+
     async def stream_response():
-        response_generator = await generate_langchain(message.text, history=[{"sender": msg.sender, "text": msg.text} for msg in history])
+        response_generator = await generate_langchain(message.text, history=[{"sender": msg.sender, "text": msg.text} for msg in history], context=context)
         response_chunks = []
         async for chunk in response_generator:
             response_chunks.append(chunk)
@@ -145,26 +168,5 @@ async def send_message_to_chat(chat_id: str, message: PydanticMessage, db: Async
         db.add_all([user_message, assistant_message])
         chat.timestamp = datetime.now().isoformat()
         await db.commit()
-
-    return StreamingResponse(stream_response(), media_type="text/plain")
-
-@app.post("/rag_chat")
-async def rag_chat(message: PydanticMessage, db: AsyncSession = Depends(get_db)):
-    user_embedding = model.encode(message.text, convert_to_tensor=False).tolist()
-    result = await db.execute(
-        select(models.Document)
-        .order_by(models.Document.embedding.l2_distance(user_embedding))
-        .limit(5)
-    )
-    documents = result.scalars().all()
-    context = "\n".join([doc.text for doc in documents])
-
-    response_generator = await generate_langchain(message.text, history=[], context=context)
-
-    async def stream_response():
-        response_chunks = []
-        async for chunk in response_generator:
-            response_chunks.append(chunk)
-            yield chunk
 
     return StreamingResponse(stream_response(), media_type="text/plain")
